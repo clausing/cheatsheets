@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>fd-cheatsheet — print</title><style>
+@page {
+  size: 279.4mm 215.9mm;
+  margin: 10mm 10mm 18mm;
+  @bottom-center { content: element(license-footer); }
+}
+footer { position: running(license-footer); text-align: center; font-size: 7pt; }
+@media screen {
+  body { display: flex; flex-direction: column; }
+  footer { position: static; order: 1; margin-top: 8mm; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: #111; font: 8pt/1.3 Arial, sans-serif; }
+main { column-count: 3; column-gap: 6mm; column-rule: .2mm solid #ddd; }
+h1 { font-size: 15pt; margin-top: 0; }
+h2 { font-size: 10pt; margin: 1em 0 .4em; }
+h1, h2, h3 { break-after: avoid; }
+p { margin: .4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+th, td { text-align: left; vertical-align: top; border-bottom: 1px solid #ddd; padding: 3px; overflow-wrap: anywhere; }
+tr { break-inside: avoid; }
+pre { background: #f3f3f3; padding: 5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: .9em; }
+pre code { font-size: 7pt; }
+a { color: inherit; overflow-wrap: anywhere; }
+ul { padding-left: 1.3em; }
+@media screen {
+  body { max-width: 279.4mm; margin: 20px auto; padding: 10mm; background: white; }
+  html { background: #ddd; }
+}
+</style></head><body><footer><a href="https://unlicense.org/">The Unlicense — Public Domain</a><br>Attribution is appreciated but not required.</footer><main><h1>fd / fdfind cheatsheet</h1>
+<p>Find files and directories <strong>by name</strong>. To search file contents, use <code>rg</code>.</p>
+<p>Verified against local <code>fdfind 9.0.0</code> help on 2026-10-20 (UTC).</p>
+<h2>Command name and syntax</h2>
+<p>Ubuntu/Debian commonly install this tool as <code>fdfind</code>; other systems use <code>fd</code>.
+All examples below use <code>fdfind</code>. Substitute <code>fd</code> if that is your executable.</p>
+<pre><code class="language-bash">fdfind [OPTIONS] [PATTERN] [SEARCH_ROOT ...]
+fdfind                        # List entries below the current directory
+fdfind invoice ./documents    # Names containing invoice
+fdfind '' ./documents         # All eligible entries under this root
+</code></pre>
+<p>By default: recursive search, regular expression patterns, matching against the
+basename, and smart case (case-insensitive unless the pattern contains uppercase).
+Hidden entries and ignored entries are skipped. Git ignore rules normally require
+a Git repository. Quote patterns to prevent shell expansion.</p>
+<h2>Important switches</h2>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-g</code>, <code>--glob</code></td>
+<td>Use a glob instead of a regex; useful for exact filenames.</td>
+</tr>
+<tr>
+<td><code>-F</code>, <code>--fixed-strings</code></td>
+<td>Literal substring search, rather than regex.</td>
+</tr>
+<tr>
+<td><code>-s</code>, <code>--case-sensitive</code></td>
+<td>Force case-sensitive matching.</td>
+</tr>
+<tr>
+<td><code>-i</code>, <code>--ignore-case</code></td>
+<td>Force case-insensitive matching.</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--full-path</code></td>
+<td>Match the full absolute path instead of just the basename.</td>
+</tr>
+<tr>
+<td><code>-H</code>, <code>--hidden</code></td>
+<td>Include hidden entries; ignore rules still apply.</td>
+</tr>
+<tr>
+<td><code>-I</code>, <code>--no-ignore</code></td>
+<td>Disable ignore rules; hidden entries still need <code>-H</code>.</td>
+</tr>
+<tr>
+<td><code>-u</code>, <code>--unrestricted</code></td>
+<td>Include hidden and ignored entries (<code>-H -I</code>).</td>
+</tr>
+<tr>
+<td><code>-E GLOB</code>, <code>--exclude GLOB</code></td>
+<td>Exclude matching entries; repeatable.</td>
+</tr>
+<tr>
+<td><code>-t TYPE</code>, <code>--type TYPE</code></td>
+<td>Filter by entry type; see below.</td>
+</tr>
+<tr>
+<td><code>-e EXT</code>, <code>--extension EXT</code></td>
+<td>Filter extensions without a leading dot; repeatable.</td>
+</tr>
+<tr>
+<td><code>-d N</code>, <code>--max-depth N</code></td>
+<td>Limit traversal depth; <code>1</code> searches immediate children.</td>
+</tr>
+<tr>
+<td><code>--min-depth N</code>, <code>--exact-depth N</code></td>
+<td>Restrict result depth.</td>
+</tr>
+<tr>
+<td><code>-S SIZE</code>, <code>--size SIZE</code></td>
+<td>Filter file size; <code>+</code> means at least, <code>-</code> at most, neither means exact.</td>
+</tr>
+<tr>
+<td><code>--changed-within TIME</code></td>
+<td>Modification time newer than a date or duration.</td>
+</tr>
+<tr>
+<td><code>--changed-before TIME</code></td>
+<td>Modification time older than a date or duration.</td>
+</tr>
+<tr>
+<td><code>-o USER:GROUP</code>, <code>--owner USER:GROUP</code></td>
+<td>Filter owner/group; either side can be omitted.</td>
+</tr>
+<tr>
+<td><code>-L</code>, <code>--follow</code></td>
+<td>Traverse symlinked directories.</td>
+</tr>
+<tr>
+<td><code>--one-file-system</code></td>
+<td>Do not descend into another filesystem.</td>
+</tr>
+<tr>
+<td><code>-a</code>, <code>--absolute-path</code></td>
+<td>Print absolute paths.</td>
+</tr>
+<tr>
+<td><code>-l</code>, <code>--list-details</code></td>
+<td>Detailed listing similar to <code>ls -l</code>.</td>
+</tr>
+<tr>
+<td><code>-0</code>, <code>--print0</code></td>
+<td>NUL-delimit paths for filename-safe pipelines.</td>
+</tr>
+<tr>
+<td><code>-x CMD</code>, <code>--exec CMD</code></td>
+<td>Run a command for each result, in parallel by default.</td>
+</tr>
+<tr>
+<td><code>-X CMD</code>, <code>--exec-batch CMD</code></td>
+<td>Pass results together to a command; OS limits can split batches.</td>
+</tr>
+<tr>
+<td><code>-j N</code>, <code>--threads N</code></td>
+<td>Set search/execution threads; <code>1</code> makes <code>-x</code> sequential.</td>
+</tr>
+<tr>
+<td><code>--max-results N</code>, <code>-1</code></td>
+<td>Stop after N results, or after one result.</td>
+</tr>
+<tr>
+<td><code>-q</code>, <code>--quiet</code></td>
+<td>Print nothing; status 0 if a result exists, 1 if none.</td>
+</tr>
+<tr>
+<td><code>--show-errors</code></td>
+<td>Display filesystem traversal errors.</td>
+</tr>
+<tr>
+<td><code>--color never</code></td>
+<td>Disable color for saved output.</td>
+</tr>
+<tr>
+<td><code>-h</code>, <code>--help</code>, <code>-V</code>, <code>--version</code></td>
+<td>Short help, detailed help, version.</td>
+</tr>
+</tbody>
+</table>
+<p>Types: <code>f</code> file, <code>d</code> directory, <code>l</code> symlink, <code>x</code> executable file, <code>e</code> empty
+file/directory, <code>s</code> socket, <code>p</code> named pipe, <code>b</code> block device, <code>c</code> character device.
+Use <code>-t e -t f</code> for empty files or <code>-t e -t d</code> for empty directories.</p>
+<h2>Practical examples</h2>
+<pre><code class="language-bash"># Regex: exact filename, or alternative extensions
+fdfind '^report\.csv$' ./documents
+fdfind '\.(csv|json)$' ./exports
+
+# Glob: exact name or wildcard
+fdfind -g 'README.md' .
+fdfind -g '*.log' ./logs
+
+# Literal text containing regex metacharacters
+fdfind -F 'report[final]' ./documents
+
+# Files with either extension; directories; symlinks; empty files
+fdfind -t f -e jpg -e png ./images
+fdfind -t d -g '*cache*' .
+fdfind -t l .
+fdfind -t e -t f .
+
+# Include hidden entries; ignore rules still apply
+fdfind -H -t f -g '.env*' .
+
+# Include ignored entries; hidden entries are still excluded
+fdfind -I -t f -e log .
+
+# Include both hidden and ignored entries (-H -I is equivalent to -u)
+fdfind -H -I -t f -g '.env*' .
+
+# Include hidden and ignored entries, excluding selected directories
+fdfind -u -t f -E .git -E node_modules -e log .
+
+# Match directory components too
+fdfind -p -g '**/config/*.json' .
+
+# Immediate children only
+fdfind -d 1 -t f '' ./documents
+
+# Size range: at least 10 MiB and at most 100 MiB
+fdfind -t f -S +10mi -S -100mi ./exports
+
+# Modified within 24 hours (relative to command execution)
+TZ=UTC fdfind -t f --changed-within 1d ./logs
+
+# Modification times strictly after/before these UTC boundaries
+TZ=UTC fdfind -t f --changed-within '2026-10-01 00:00:00' \
+  --changed-before '2026-10-02 00:00:00' ./logs
+
+# Owner or group
+fdfind -t f --owner root ./exports
+fdfind -t f --owner :analysts ./exports
+
+# Read-only commands on results; put -x/-X last
+fdfind -t f -e log ./logs -j 1 -x sha256sum -- '{}'
+fdfind -t f -e txt ./documents -X wc -l -- '{}'
+
+# Filename-safe pipeline (GNU xargs: -r skips execution when input is empty)
+fdfind -t f -e log -0 ./logs | xargs -0 -r sha256sum --
+
+# Pattern beginning with a dash
+fdfind -- '-backup' ./documents
+
+# Save a sorted list; create ./reports first if needed
+fdfind -a -t f --color never ./documents | LC_ALL=C sort &gt; ./reports/file-list.txt
+</code></pre>
+<h2>Execution placeholders and common pitfalls</h2>
+<table>
+<thead>
+<tr>
+<th>Placeholder</th>
+<th>Expansion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{}</code></td>
+<td>Path</td>
+</tr>
+<tr>
+<td><code>{/}</code></td>
+<td>Basename</td>
+</tr>
+<tr>
+<td><code>{//}</code></td>
+<td>Parent directory</td>
+</tr>
+<tr>
+<td><code>{.}</code></td>
+<td>Path without extension</td>
+</tr>
+<tr>
+<td><code>{/.}</code></td>
+<td>Basename without extension</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>A bare pattern is a regex: <code>.</code> means any character; use <code>\.</code> for a literal dot.</li>
+<li><code>-e log</code> selects extensions; it does not search file contents.</li>
+<li><code>-x</code> executes programs directly. Shell pipelines/redirection require an explicit shell.</li>
+<li>Search and execution order are not guaranteed. Use NUL-aware sorting for filenames containing newlines (<code>sort -z</code>); line-based sorting is for ordinary filenames.</li>
+<li>Size units: <code>k/m/g</code> are decimal; <code>ki/mi/gi</code> are binary.</li>
+<li>Date filters use <strong>modification time</strong>, not creation time. Set <code>TZ=UTC</code> for UTC date interpretation.</li>
+<li>For evidence, search a read-only mount and use read-only child commands; <code>-x</code>/<code>-X</code> can run any program, including modifying ones.</li>
+</ul>
+<p>Reference used: local <code>fdfind --help</code>. Upstream: <a href="https://github.com/sharkdp/fd">https://github.com/sharkdp/fd</a>.</p>
+<hr />
+<p><a href="https://unlicense.org/">The Unlicense — Public Domain</a></p>
+<p>Attribution is appreciated but not required.</p></main></body></html>

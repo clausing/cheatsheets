@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>rg-cheatsheet — print</title><style>
+@page {
+  size: 279.4mm 215.9mm;
+  margin: 10mm 10mm 18mm;
+  @bottom-center { content: element(license-footer); }
+}
+footer { position: running(license-footer); text-align: center; font-size: 7pt; }
+@media screen {
+  body { display: flex; flex-direction: column; }
+  footer { position: static; order: 1; margin-top: 8mm; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: #111; font: 8pt/1.3 Arial, sans-serif; }
+main { column-count: 3; column-gap: 6mm; column-rule: .2mm solid #ddd; }
+h1 { font-size: 15pt; margin-top: 0; }
+h2 { font-size: 10pt; margin: 1em 0 .4em; }
+h1, h2, h3 { break-after: avoid; }
+p { margin: .4em 0; }
+table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+th, td { text-align: left; vertical-align: top; border-bottom: 1px solid #ddd; padding: 3px; overflow-wrap: anywhere; }
+tr { break-inside: avoid; }
+pre { background: #f3f3f3; padding: 5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: .9em; }
+pre code { font-size: 7pt; }
+a { color: inherit; overflow-wrap: anywhere; }
+ul { padding-left: 1.3em; }
+@media screen {
+  body { max-width: 279.4mm; margin: 20px auto; padding: 10mm; background: white; }
+  html { background: #ddd; }
+}
+</style></head><body><footer><a href="https://unlicense.org/">The Unlicense — Public Domain</a><br>Attribution is appreciated but not required.</footer><main><h1>rg / ripgrep cheatsheet</h1>
+<p>Search <strong>file contents</strong> recursively. To find files and directories by name, use <code>fd</code> / <code>fdfind</code>.</p>
+<p>Verified against local <code>ripgrep 15.2.0</code> help on 2026-10-20 (UTC).</p>
+<h2>Syntax and defaults</h2>
+<pre><code class="language-bash">rg [OPTIONS] PATTERN [FILE_OR_DIRECTORY ...]
+rg [OPTIONS] -e PATTERN1 -e PATTERN2 [PATH ...]
+rg [OPTIONS] -f PATTERN_FILE [PATH ...]
+command | rg [OPTIONS] PATTERN
+</code></pre>
+<p>With no path, searches the current directory recursively (or stdin when piped).
+Patterns are case-sensitive regular expressions by default. Hidden entries,
+ignored entries, and binary data are normally excluded from ordinary recursive
+text searches. Explicit file arguments can override traversal filters.
+Quote patterns with single quotes to prevent shell expansion.</p>
+<h2>Matching switches</h2>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-F</code>, <code>--fixed-strings</code></td>
+<td>Treat patterns as literal strings.</td>
+</tr>
+<tr>
+<td><code>-i</code>, <code>--ignore-case</code></td>
+<td>Case-insensitive matching.</td>
+</tr>
+<tr>
+<td><code>-s</code>, <code>--case-sensitive</code></td>
+<td>Force case-sensitive matching.</td>
+</tr>
+<tr>
+<td><code>-S</code>, <code>--smart-case</code></td>
+<td>Ignore case unless a pattern contains uppercase.</td>
+</tr>
+<tr>
+<td><code>-w</code>, <code>--word-regexp</code></td>
+<td>Match whole words.</td>
+</tr>
+<tr>
+<td><code>-x</code>, <code>--line-regexp</code></td>
+<td>Match whole lines.</td>
+</tr>
+<tr>
+<td><code>-v</code>, <code>--invert-match</code></td>
+<td>Select lines that do not match.</td>
+</tr>
+<tr>
+<td><code>-e PATTERN</code>, <code>--regexp PATTERN</code></td>
+<td>Add a pattern; repeat for OR matching.</td>
+</tr>
+<tr>
+<td><code>-f FILE</code>, <code>--file FILE</code></td>
+<td>Read patterns, one per line; OR matching.</td>
+</tr>
+<tr>
+<td><code>-P</code>, <code>--pcre2</code></td>
+<td>Use PCRE2 for lookaround/backreferences, if supported by the build.</td>
+</tr>
+<tr>
+<td><code>-U</code>, <code>--multiline</code></td>
+<td>Allow matches across line boundaries.</td>
+</tr>
+<tr>
+<td><code>--multiline-dotall</code></td>
+<td>With multiline mode, let <code>.</code> match newlines.</td>
+</tr>
+</tbody>
+</table>
+<p>Default regex supports alternation, groups, classes, and repetition, but not
+lookaround/backreferences. An empty line in a pattern file matches every line.</p>
+<h2>Scope and input switches</h2>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-g GLOB</code>, <code>--glob GLOB</code></td>
+<td>Include matching paths; <code>!GLOB</code> excludes. Repeatable; later matching globs win.</td>
+</tr>
+<tr>
+<td><code>--iglob GLOB</code></td>
+<td>Case-insensitive path glob.</td>
+</tr>
+<tr>
+<td><code>-t TYPE</code>, <code>--type TYPE</code></td>
+<td>Include a built-in file type, such as <code>py</code> or <code>js</code>.</td>
+</tr>
+<tr>
+<td><code>-T TYPE</code>, <code>--type-not TYPE</code></td>
+<td>Exclude a file type.</td>
+</tr>
+<tr>
+<td><code>--type-list</code></td>
+<td>List recognized file types and their globs.</td>
+</tr>
+<tr>
+<td><code>--hidden</code></td>
+<td>Include hidden files/directories; ignore rules still apply.</td>
+</tr>
+<tr>
+<td><code>--no-ignore</code></td>
+<td>Disable ignore rules; hidden entries still need <code>--hidden</code>.</td>
+</tr>
+<tr>
+<td><code>-u</code> / <code>-uu</code> / <code>-uuu</code></td>
+<td>Disable ignores / also include hidden / also search binary files.</td>
+</tr>
+<tr>
+<td><code>-a</code>, <code>--text</code></td>
+<td>Treat binary data as text; can print arbitrary bytes.</td>
+</tr>
+<tr>
+<td><code>-L</code>, <code>--follow</code></td>
+<td>Follow symbolic links during traversal.</td>
+</tr>
+<tr>
+<td><code>--max-depth N</code></td>
+<td>Limit directory traversal depth.</td>
+</tr>
+<tr>
+<td><code>--max-filesize SIZE</code></td>
+<td>Skip files larger than SIZE; suffixes <code>K</code>, <code>M</code>, <code>G</code> use powers of 1024.</td>
+</tr>
+<tr>
+<td><code>--one-file-system</code></td>
+<td>Do not descend into another filesystem.</td>
+</tr>
+<tr>
+<td><code>-E ENCODING</code>, <code>--encoding ENCODING</code></td>
+<td>Decode a specified encoding, e.g. <code>utf-16le</code>.</td>
+</tr>
+<tr>
+<td><code>-z</code>, <code>--search-zip</code></td>
+<td>Search supported compressed streams using available external decompressors; not a general ZIP/TAR archive walker.</td>
+</tr>
+<tr>
+<td><code>--files</code></td>
+<td>List eligible file paths without searching contents.</td>
+</tr>
+<tr>
+<td><code>--no-config</code></td>
+<td>Ignore settings from <code>RIPGREP_CONFIG_PATH</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2>Output and control switches</h2>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-n</code>, <code>--line-number</code></td>
+<td>Include line numbers, including when piping or saving.</td>
+</tr>
+<tr>
+<td><code>-H</code>, <code>--with-filename</code></td>
+<td>Always show filenames.</td>
+</tr>
+<tr>
+<td><code>-I</code>, <code>--no-filename</code></td>
+<td>Suppress filenames; does <strong>not</strong> disable ignore rules.</td>
+</tr>
+<tr>
+<td><code>--no-heading</code></td>
+<td>Prefix matching lines with paths instead of using file headings.</td>
+</tr>
+<tr>
+<td><code>--column</code></td>
+<td>Include 1-based byte column numbers.</td>
+</tr>
+<tr>
+<td><code>-A N</code>, <code>-B N</code>, <code>-C N</code></td>
+<td>Show N lines after, before, or on both sides of matches.</td>
+</tr>
+<tr>
+<td><code>-o</code>, <code>--only-matching</code></td>
+<td>Print matching parts only.</td>
+</tr>
+<tr>
+<td><code>-l</code>, <code>--files-with-matches</code></td>
+<td>Print only paths with a match.</td>
+</tr>
+<tr>
+<td><code>--files-without-match</code></td>
+<td>Print only paths with no match.</td>
+</tr>
+<tr>
+<td><code>-c</code>, <code>--count</code></td>
+<td>Count matching lines per file in ordinary line mode.</td>
+</tr>
+<tr>
+<td><code>--count-matches</code></td>
+<td>Count individual matches per file.</td>
+</tr>
+<tr>
+<td><code>--include-zero</code></td>
+<td>Include zero counts in count output.</td>
+</tr>
+<tr>
+<td><code>-m N</code>, <code>--max-count N</code></td>
+<td>Stop after N matching lines <strong>per file</strong>.</td>
+</tr>
+<tr>
+<td><code>-q</code>, <code>--quiet</code></td>
+<td>No stdout; stop when a match is found.</td>
+</tr>
+<tr>
+<td><code>-0</code>, <code>--null</code></td>
+<td>Follow printed filenames with NUL; useful with <code>-l</code> or <code>--files</code>.</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Emit JSON Lines search events and a summary.</td>
+</tr>
+<tr>
+<td><code>--stats</code></td>
+<td>Append search statistics.</td>
+</tr>
+<tr>
+<td><code>--sort path</code></td>
+<td>Sort traversal/results by path; disables parallel searching.</td>
+</tr>
+<tr>
+<td><code>-j N</code>, <code>--threads N</code></td>
+<td>Set thread count.</td>
+</tr>
+<tr>
+<td><code>--color never</code></td>
+<td>Disable color for reports/pipelines.</td>
+</tr>
+<tr>
+<td><code>-r TEXT</code>, <code>--replace TEXT</code></td>
+<td>Replace matches in <strong>printed output only</strong>; never edits files.</td>
+</tr>
+<tr>
+<td><code>--debug</code></td>
+<td>Explain filtering and other search decisions on stderr.</td>
+</tr>
+<tr>
+<td><code>-h</code>, <code>--help</code>, <code>-V</code>, <code>--version</code></td>
+<td>Short help, detailed help, version.</td>
+</tr>
+</tbody>
+</table>
+<h2>Practical examples</h2>
+<pre><code class="language-bash"># Basic, case-insensitive, literal, and whole-word searches
+rg -n 'error' ./logs
+rg -ni 'access denied' ./logs
+rg -nF '192.0.2.10' ./logs
+rg -nw 'root' ./exports
+
+# Regex alternatives, anchored lines, and multiple patterns (OR)
+rg -n 'error|warning|critical' ./logs
+rg -n '^Failed password' ./logs
+rg -n -e 'timeout' -e 'connection refused' ./logs
+
+# Literal IOC list: one indicator per line, no blank lines
+rg -nF -f ./analysis/iocs.txt ./exports
+
+# Select extensions or built-in types; exclude directories
+rg -n -g '*.log' -g '!archive/**' 'error' ./logs
+rg -n -t py -g '!tests/**' 'subprocess' .
+rg --type-list
+
+# Include ignored files; hidden entries are still excluded
+rg -n -u 'needle' ./exports
+
+# Include both ignored and hidden files; retain normal binary detection
+rg -n -uu 'needle' ./exports
+
+# Equivalent long options for -uu
+rg -n --hidden --no-ignore 'needle' ./exports
+
+# Context, matching paths, and files with no match
+rg -n -C 3 'authentication failure' ./logs
+rg -l 'ERROR' ./logs
+rg --files-without-match 'SUCCESS' ./logs
+
+# Count matching lines versus individual occurrences
+rg -c 'error' ./logs
+rg --count-matches 'error' ./logs
+
+# Extract matches; -I suppresses filename prefixes
+rg -I -o '\b[0-9a-fA-F]{64}\b' ./exports
+
+# PCRE2 lookbehind (requires PCRE2 support)
+rg -nP '(?&lt;=user=)[^ ]+' ./logs
+
+# Match across newlines; .*? may span line breaks
+rg -n -U --multiline-dotall 'BEGIN.*?END' ./exports
+
+# Decode text and search supported compressed files
+rg -n -E utf-16le 'PowerShell' ./exports/events.txt
+rg -n -z 'error' ./logs
+
+# Preview eligible filenames or diagnose skipped files
+rg --files -g '*.json' ./exports
+rg --debug 'needle' ./exports
+
+# Pattern beginning with a dash
+rg -n -e '-EncodedCommand' ./exports
+
+# Replace only in output; shell single quotes preserve capture references
+rg -n 'user=([^ ]+)' -r 'account=$1' ./logs
+
+# Filename-safe pipeline (GNU xargs)
+rg -l -0 'ERROR' ./logs | xargs -0 -r sha256sum --
+
+# Save plain text or structured results; create ./reports first if needed
+rg --no-config -nH --no-heading --color never --sort path \
+  'error' ./logs &gt; ./reports/error-matches.txt
+rg --no-config --json 'error' ./logs &gt; ./reports/error-matches.jsonl
+
+# Use search status in a script
+if rg -q 'ERROR' ./logs/app.log; then
+  printf '%s\n' 'ERROR found'
+fi
+</code></pre>
+<h2>Exit status and common pitfalls</h2>
+<ul>
+<li><strong>0:</strong> at least one match; <strong>1:</strong> no matches; <strong>2:</strong> error. In quiet mode, finding a match can yield 0 even if an error also occurred. Inspect stderr when completeness matters.</li>
+<li><code>-c</code> counts matching lines, not occurrences; use <code>--count-matches</code> for occurrences. Multiline counting has different semantics; consult <code>rg --help</code>.</li>
+<li><code>rg -g '*.log' 'error'</code> searches contents of selected files. <code>rg --files -g '*.log'</code> lists paths only.</li>
+<li><code>-uu</code> includes hidden/ignored entries but retains binary filtering. <code>-uuu</code> enables binary searching; <code>-a</code> treats binary bytes as printable text.</li>
+<li><code>-0</code> separates filenames, not matching lines. Use <code>rg -l -0</code> or <code>rg --files -0</code> when piping paths to <code>xargs -0</code>.</li>
+<li><code>--json</code> cannot be combined with filename-only or count output modes.</li>
+<li>Flags differ between tools: fd <code>-H</code> means hidden; rg <code>-H</code> means show filenames. fd <code>-l</code> means details; rg <code>-l</code> means paths with matches.</li>
+<li>Search results are not a substitute for a complete forensic parser. For evidence, use read-only mounts and route saved output to analysis/report directories.</li>
+</ul>
+<p>Reference used: local <code>rg --help</code>. Upstream: <a href="https://github.com/BurntSushi/ripgrep">https://github.com/BurntSushi/ripgrep</a>.</p>
+<hr />
+<p><a href="https://unlicense.org/">The Unlicense — Public Domain</a></p>
+<p>Attribution is appreciated but not required.</p></main></body></html>
