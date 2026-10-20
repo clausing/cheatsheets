@@ -14,17 +14,24 @@ Existing generated outputs are overwritten; source Markdown is only read.
 from pathlib import Path
 import argparse
 import html
+import logging
 import sys
+import tempfile
 import markdown
 from weasyprint import HTML
 
 __description__ = 'Convert Markdown cheatsheets to printable PDFs and optional HTML.'
 __author__ = 'Jim Clausing'
-__version_info__ = (1, 0, 0)
+__version_info__ = (1, 0, 1)
 __version__ = '.'.join(map(str, __version_info__))
 __date__ = '2026-10-20'
 
 ROOT = Path(__file__).resolve().parent
+LICENSE_MARKDOWN = '''---
+
+[The Unlicense — Public Domain](https://unlicense.org/)
+
+Attribution is appreciated but not required.'''
 PAPER_SIZES = {
     'letter': (215.9, 279.4),
     'legal': (215.9, 355.6),
@@ -65,6 +72,44 @@ ul { padding-left: 1.3em; }
 }
 """
 
+class RenderErrors(logging.Handler):
+    def __init__(self):
+        super().__init__(logging.ERROR)
+        self.messages = []
+
+    def emit(self, record):
+        self.messages.append(record.getMessage())
+
+
+def render_pdf(html_content, base_url):
+    logger = logging.getLogger('weasyprint')
+    errors = RenderErrors()
+    logger.addHandler(errors)
+    try:
+        content = HTML(string=html_content, base_url=str(base_url)).write_pdf()
+        if errors.messages:
+            raise RuntimeError('Rendering failed: ' + '; '.join(errors.messages))
+        if not content:
+            raise RuntimeError('PDF generation produced no content')
+        return content
+    finally:
+        logger.removeHandler(errors)
+
+
+def atomic_write(destination, content):
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=destination.parent,
+                                         prefix=f'.{destination.name}.',
+                                         delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(content)
+        temporary.replace(destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-V', '--version', action='version',
@@ -101,7 +146,10 @@ def main():
            .replace('COLUMN_COUNT', str(args.columns)))
     for source in sources:
         destination = source.with_name(f'{source.stem}-print.html')
-        body = markdown.markdown(source.read_text(encoding='utf-8'), extensions=['tables', 'fenced_code'])
+        text = source.read_text(encoding='utf-8').rstrip()
+        if text.endswith(LICENSE_MARKDOWN):
+            text = text[:-len(LICENSE_MARKDOWN)].rstrip()
+        body = markdown.markdown(text, extensions=['tables', 'fenced_code'])
         title = html.escape(f'{source.stem} — print')
         html_content = (
             '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
@@ -113,14 +161,13 @@ def main():
             '</footer>'
             f'<main>{body}</main></body></html>\n'
         )
+        pdf = destination.with_suffix('.pdf')
+        pdf_content = render_pdf(html_content, source.parent)
+        atomic_write(pdf, pdf_content)
         if args.save_html:
-            destination.write_text(html_content, encoding='utf-8')
+            atomic_write(destination, html_content.encode('utf-8'))
             print(f'HTML: {destination}')
             sys.stdout.flush()
-        pdf = destination.with_suffix('.pdf')
-        HTML(string=html_content, base_url=str(source.parent)).write_pdf(str(pdf))
-        if not pdf.is_file() or pdf.stat().st_size == 0:
-            raise RuntimeError(f'PDF generation failed: {pdf}')
         print(f'PDF:  {pdf}')
         sys.stdout.flush()
 

@@ -1,0 +1,3 @@
+- [x] Make output replacement atomic and treat rendering errors as failures.
+- [x] Remove the matching trailing Markdown license notice from rendered body only.
+- [x] Verify regressions and regenerate printable outputs.
