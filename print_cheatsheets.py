@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert Markdown files beside this script (except AGENTS.md) to PDF; optionally save HTML with -H.
+"""Convert Markdown files beside this script (except AGENTS.md and README.md) to PDF; optionally save HTML with -H.
 
 Run from the repository root:
     python3 print_cheatsheets.py
@@ -85,11 +85,11 @@ def main():
     parser.add_argument('-c', '--columns', type=int, choices=(1, 2, 3, 4),
                         default=3, help='number of columns (default: 3)')
     parser.add_argument('files', nargs='*', type=Path, metavar='FILE.md',
-                        help='Markdown files to render (default: all *.md beside the script except AGENTS.md)')
+                        help='Markdown files to render (default: all *.md beside the script except AGENTS.md and README.md)')
     args = parser.parse_args()
     sources = args.files if args.files else sorted(ROOT.glob('*.md'))
     sources = list(dict.fromkeys(source.resolve() for source in sources
-                                if source.name != 'AGENTS.md'))
+                                if source.name not in ('AGENTS.md', 'README.md')))
     for source in sources:
         if source.suffix.lower() != '.md' or not source.is_file():
             parser.error(f'not an existing Markdown file: {source}')

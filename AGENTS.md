@@ -19,7 +19,7 @@ The renderer requires the Python `markdown` and `weasyprint` packages, plus Weas
 - `python3 print_cheatsheets.py`: generate PDFs with US Letter landscape pages and three columns.
 - `python3 print_cheatsheets.py -H --paper-size a4 --portrait --columns 2`: generate PDFs and HTML with a custom layout.
 
-Without filenames, the script reads all `*.md` files beside it except `AGENTS.md` and writes generated files alongside them. Existing generated files at the destination are overwritten.
+Without filenames, the script reads all `*.md` files beside it except `AGENTS.md` and `README.md` and writes generated files alongside them. Existing generated files at the destination are overwritten.
 
 ## Coding Style & Naming Conventions
 
